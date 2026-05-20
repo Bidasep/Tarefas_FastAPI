@@ -46,7 +46,6 @@
 from fastapi import FastAPI, HTTPException
 
 
-#3 -  iniciar nosso banco de dados e criar.
 
 app = FastAPI()
 
@@ -82,8 +81,11 @@ def post_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, conclui
     minhas_tarefas[id_tarefa] = {"nome_tarefa":nome_tarefa, "descricao_tarefa":descricao_tarefa, "concluida":concluida}
     return { "Mensagem" : "Tarefa adicionada com sucesso!"}
 
+
+
+
 @app.put("/atualiza/{id_tarefa}")
-def post_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, concluida:bool):
+def put_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, concluida:bool):
     
     minha_tarefa = minhas_tarefas.get(id_tarefa)
     
@@ -91,12 +93,16 @@ def post_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, conclui
         raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
     else:
         if minha_tarefa:
-            minha_tarefa["nome_tarefa"] =nome_tarefa
+            minha_tarefa["nome_tarefa"] = nome_tarefa
         if descricao_tarefa:
             minha_tarefa["descricao_tarefa"] = descricao_tarefa
-        if concluida:
+        if concluida is not None:
             minha_tarefa["concluida"] = concluida
         return{"message" : "Tarefa atualizada com sucesso"}
+    
+    
+       
+    
     
 @app.delete("/delete/{id_tarefa}")
 def delete_tarefa(id_tarefa: int):
