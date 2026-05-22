@@ -1,4 +1,4 @@
-#Objetivo
+#Objetivo com 
 #Crie uma aplicação simples utilizando FastAPI para gerenciar um conjunto de tarefas. A aplicação deve permitir as seguintes operações:
 
 #Adicionar uma nova tarefa com um nome e uma descrição.
@@ -44,10 +44,12 @@
 
 
 from fastapi import FastAPI, HTTPException
+from pydantic BaseModel
 
 
 
 app = FastAPI()
+
 
 minhas_tarefas = {}
 
