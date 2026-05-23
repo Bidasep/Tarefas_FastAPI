@@ -76,8 +76,10 @@ def read_root():
 #Rota para ver  as Tarefa
 @app.get("/tarefas")
 def get_tarefas():
+    #se nao existir nada em minhas_tarefas
     if not minhas_tarefas:
         return{ "Message": "não existe tarefas"}
+    
     else:
         return{"tarefas": minhas_tarefas}
     
