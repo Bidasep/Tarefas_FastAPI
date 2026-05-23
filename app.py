@@ -1,4 +1,5 @@
 #Objetivo com 
+# Passo 1. Criar um Modelo com Pydantic
 #Crie uma aplicação simples utilizando FastAPI para gerenciar um conjunto de tarefas. A aplicação deve permitir as seguintes operações:
 
 #Adicionar uma nova tarefa com um nome e uma descrição.
@@ -44,26 +45,35 @@
 
 
 from fastapi import FastAPI, HTTPException
-from pydantic BaseModel
+from pydantic import BaseModel
+
+
+#Passo 1. Criar um Modelo com Pydantic OK
+class Tarefa(BaseModel):
+    nome : str
+    descricao : str
+    concluida : bool =False
+    
+
 
 
 
 app = FastAPI()
 
 
-minhas_tarefas = {}
+minhas_tarefas = []
 
 #Definindo uma Lista de Tarefas
     
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Hello": "World, a API está ok!"}
 
 
 # Rotas e endpoints
 
-#Rota para Adicionar uma Tarefa
+#Rota para ver  as Tarefa
 @app.get("/tarefas")
 def get_tarefas():
     if not minhas_tarefas:
@@ -75,43 +85,47 @@ def get_tarefas():
 
 
 @app.post("/adiciona")
-def post_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, concluida:bool):
+def post_tarefa(tarefa:Tarefa):
 
-    if id_tarefa in minhas_tarefas:
-       raise HTTPException(status_code = 400, detail = "Essa tarefa já existe !")
+    for item in minhas_tarefas:
+        if item.nome == tarefa.nome:
+            raise HTTPException(status_code = 400, detail = "Essa tarefa já existe !")
+        
+    minhas_tarefas.append(tarefa)
+    return { "Mensagem" : "Tarefa adicionada com sucesso!",
+            "tarefa":tarefa
+    }
     
-    minhas_tarefas[id_tarefa] = {"nome_tarefa":nome_tarefa, "descricao_tarefa":descricao_tarefa, "concluida":concluida}
-    return { "Mensagem" : "Tarefa adicionada com sucesso!"}
 
 
 
 
-@app.put("/atualiza/{id_tarefa}")
-def put_tarefa(id_tarefa: int, nome_tarefa: str, descricao_tarefa: str, concluida:bool):
+@app.put("/atualiza/{nome}")
+def put_tarefa(nome:str):   
     
-    minha_tarefa = minhas_tarefas.get(id_tarefa)
     
-    if not minha_tarefa:
-        raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
-    else:
-        if minha_tarefa:
-            minha_tarefa["nome_tarefa"] = nome_tarefa
-        if descricao_tarefa:
-            minha_tarefa["descricao_tarefa"] = descricao_tarefa
-        if concluida is not None:
-            minha_tarefa["concluida"] = concluida
-        return{"message" : "Tarefa atualizada com sucesso"}
+    for tarefa in minhas_tarefas:
+        if tarefa.nome == nome:
+            tarefa.concluida = True
+            return { "message":f" Tarefa '{nome}' Foi concluida com sucesso!"}
+            
+            
+    raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
+
     
     
        
     
     
-@app.delete("/delete/{id_tarefa}")
-def delete_tarefa(id_tarefa: int):
-    if id_tarefa not in minhas_tarefas:
-        raise HTTPException(status_code = 404, detail = "Essa tarefa ja foi deletada !")
-    else:
-        del minhas_tarefas[id_tarefa]
+@app.delete("/delete/{nome}")
+def delete_tarefa(nome:str):
+
+    for tarefa in minhas_tarefas:
+        if tarefa.nome == nome:
+            minhas_tarefas.remove(tarefa)
+            return{"message":"Esta tarefa foi deletada com sucesso"}
+    
+    raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
         
-        return{"message":"Esta tarefa foi deletada com sucesso"}
+        
     
