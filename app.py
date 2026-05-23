@@ -48,7 +48,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 
-#Passo 1. Criar um Modelo com Pydantic OK
+#Passo 1. Criar um Modelo com Pydantic -  Importar o Base Model "from pydantic import BaseModel" - OK
 class Tarefa(BaseModel):
     nome : str
     descricao : str
@@ -61,11 +61,11 @@ class Tarefa(BaseModel):
 app = FastAPI()
 
 
+#Definindo uma Lista de Tarefas
 minhas_tarefas = []
 
-#Definindo uma Lista de Tarefas
     
-
+#rota inicial/ Teste da API
 @app.get("/")
 def read_root():
     return {"Hello": "World, a API está ok!"}
@@ -83,14 +83,15 @@ def get_tarefas():
     
 
 
-
+#Rota para adicionar as tarefas
 @app.post("/adiciona")
 def post_tarefa(tarefa:Tarefa):
-
+    #para cada item na "lista" minhas_tarefas 
     for item in minhas_tarefas:
+        #se o item da lista tiver o nome do parametro "nome" lança uma exception
         if item.nome == tarefa.nome:
             raise HTTPException(status_code = 400, detail = "Essa tarefa já existe !")
-        
+    #se nao, adiciona o objeto Tarefa na lista minhas tarefas e retorna a mensagem.    
     minhas_tarefas.append(tarefa)
     return { "Mensagem" : "Tarefa adicionada com sucesso!",
             "tarefa":tarefa
@@ -99,32 +100,37 @@ def post_tarefa(tarefa:Tarefa):
 
 
 
-
+#Rota para atualizar uma tarefa "Concluida", recebe um nome como parametro
 @app.put("/atualiza/{nome}")
 def put_tarefa(nome:str):   
     
-    
+    #para cada tarefa da lista(minhas_tarefas)
     for tarefa in minhas_tarefas:
+        #se a o nome da tarefa for igual o nome do parametro (nome passado) seta concluido para true e retorna mensagem
         if tarefa.nome == nome:
             tarefa.concluida = True
             return { "message":f" Tarefa '{nome}' Foi concluida com sucesso!"}
             
-            
+    #se nao achar a tarefa lança a exception        
     raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
 
     
     
        
     
-    
+#Rota para deletar a tarefa    
 @app.delete("/delete/{nome}")
 def delete_tarefa(nome:str):
-
+    #para cada tarefa da lista (minhas_tarefas)
     for tarefa in minhas_tarefas:
+        #se o nome da tarefa for igual o nome passado pelo parametro
         if tarefa.nome == nome:
+            #removve a tarefa da lista
             minhas_tarefas.remove(tarefa)
             return{"message":"Esta tarefa foi deletada com sucesso"}
-    
+        
+        
+    #se nao achar a tarefa lança a exception 
     raise HTTPException(status_code = 404, detail = "Essa tarefa não existe !")
         
         
