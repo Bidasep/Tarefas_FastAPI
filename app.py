@@ -1,5 +1,5 @@
 #Objetivo com 
-# Passo 1. Criar um Modelo com Pydantic
+# Passo 1. Criar um Modelo com Pydantic e autenticação
 #Crie uma aplicação simples utilizando FastAPI para gerenciar um conjunto de tarefas. A aplicação deve permitir as seguintes operações:
 
 #Adicionar uma nova tarefa com um nome e uma descrição.
@@ -41,12 +41,19 @@
 #poetry add sqlalchemy aiosqlite  //  SÃO DOIS ARQUIVOS ALCHEMY E SQLITE
 
 #após podemos inicar o projeto
+#Criar um Modelo com Pydantic -  Importar o Base Model "from pydantic import BaseModel" - OK
+#importar "from fastapi.security import HTTPBasic,HTTPBasicCredentials"
+#importar "import secrets"
+#importar "Depends" from fastapi
 
 
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
+from fastapi.security import HTTPBasic,HTTPBasicCredentials
+import secrets
 
+app = FastAPI()
 
 #Passo 1. Criar um Modelo com Pydantic -  Importar o Base Model "from pydantic import BaseModel" - OK
 class Tarefa(BaseModel):
@@ -54,11 +61,30 @@ class Tarefa(BaseModel):
     descricao : str
     concluida : bool =False
     
+#Criar um usuário e senha de teste 
+USUARIO = "admin"
+SENHA = "12345" 
+
+security = HTTPBasic()
+
+#criar uma função para autenticar o usuário
+def autenticar_usuario(credentials: HTTPBasicCredentials = Depends(security)):
+    
+    # VE SE AS CREDENCIAIS DE USUÁRIO(USERNAME) É IGUAL AO USUÁRIO(O CRIADO COMO EXEMPLO OU O USUÁRIO OU O QUE ESTÁ SENDO PASSADO)
+    is_username_correct = secrets.compare_digest(credentials.username, USUARIO)
+    
+    # VE SE AS CREDENCIAIS DE SENHA(PASSWORD) É IGUAL A SENHA(O CRIADO COMO EXEMPLO OU A SENHA QUE ESTÁ SENDO PASSADO)
+    is_password_correct = secrets.compare_digest(credentials.password, SENHA)
+    
+    #se um dos dois estiver errado not (usuário e senha) lança e exception
+    if not (is_username_correct and is_password_correct):
+        raise HTTPException(
+            status_code=401,
+            detail="Usuário ou Senha incorretos",
+            headers={"WWW-Authenticate":"Basic"}
+        )
 
 
-
-
-app = FastAPI()
 
 
 #Definindo uma Lista de Tarefas
@@ -75,19 +101,56 @@ def read_root():
 
 #Rota para ver  as Tarefa
 @app.get("/tarefas")
-def get_tarefas():
+def get_tarefas(page:int =1, limit:int=10, ordenar_por:str = "nome", ordem:str = "asc", credentials: HTTPBasicCredentials = Depends(autenticar_usuario) ):
+    
+    #se o numero da página for menor que 1 ou limite de itens na pagina < 1 
+    if page < 1 or limit < 1:
+        raise HTTPException(status_code=400,detail="page ou limit estão com valores inválidos!!!")
+    
     #se nao existir nada em minhas_tarefas
     if not minhas_tarefas:
         return{ "Message": "não existe tarefas"}
     
-    else:
-        return{"tarefas": minhas_tarefas}
+    #Verificação da ordenação
+    
+    if ordem not in ["asc","desc"]:
+        raise HTTPException(status_code=400,detail="Ordem deve ser 'asc' ou 'desc'")
+    
+    if ordenar_por not in ["nome","descricao","status"]:
+        raise HTTPException(status_code=400,detail="Ordenação  deve ser por'nome' ou 'descricao' ou 'status' ! ")
+    
+    #estruturação do inicio e fim da pagina
+    #inicio será na pagina -(menos) 1
+    inicio = (page -1 )* limit
+    fim = inicio + limit
+    
+    # a nova lista vai receber o item de acordo com os parametros. sorted vai ordenar os itens da lista "minhas_tarefas" mantendo a original.
+    # o que vai vir ordenado? que está dentro do sorted( como dentro da lista tem objetos, nao da pra retornar direto ordenado
+    #key = vai receber o valor do parametro para ordenar ex:"nome""descr"...vai usar uma função lambda(uma função rapida tipo arrow function)
+    #para cada tarefa, pegue algum valor para usar na ordenação
+    #getattr  = getattr(objeto, "atributo"), vai pegar o atributo escolhido "nome" "descrição"    tarefa."parametro escolhido (nome)"
+    #reverse controla asc ou desc.
+    #sorted()Ordena a lista. // key= Define QUAL valor usar na ordenação. // lambda = Cria uma função rápida. // getattr() Pega um atributo dinamicamente.
+        
+    #)
+    tarefas_ordenadas = sorted(minhas_tarefas, key=lambda tarefa: getattr(tarefa,ordenar_por ), reverse=True if ordem =="desc" else False)
+    
+    tarefas_paginadas = tarefas_ordenadas[inicio:fim]
+    
+    return {
+        "page": page,
+        "limit": limit,
+        "ordem": ordem,
+        "ordenar_por":ordenar_por,
+        "total" : len(minhas_tarefas),
+        "tarefas": tarefas_paginadas
+    }
     
 
 
 #Rota para adicionar as tarefas
 @app.post("/adiciona")
-def post_tarefa(tarefa:Tarefa):
+def post_tarefa(tarefa:Tarefa, credentials: HTTPBasicCredentials = Depends(autenticar_usuario)):
     #para cada item na "lista" minhas_tarefas 
     for item in minhas_tarefas:
         #se o item da lista tiver o nome do parametro "nome" lança uma exception
@@ -104,7 +167,7 @@ def post_tarefa(tarefa:Tarefa):
 
 #Rota para atualizar uma tarefa "Concluida", recebe um nome como parametro
 @app.put("/atualiza/{nome}")
-def put_tarefa(nome:str):   
+def put_tarefa(nome:str, credentials: HTTPBasicCredentials = Depends(autenticar_usuario)):   
     
     #para cada tarefa da lista(minhas_tarefas)
     for tarefa in minhas_tarefas:
@@ -122,7 +185,7 @@ def put_tarefa(nome:str):
     
 #Rota para deletar a tarefa    
 @app.delete("/delete/{nome}")
-def delete_tarefa(nome:str):
+def delete_tarefa(nome:str, credentials: HTTPBasicCredentials = Depends(autenticar_usuario)):
     #para cada tarefa da lista (minhas_tarefas)
     for tarefa in minhas_tarefas:
         #se o nome da tarefa for igual o nome passado pelo parametro
