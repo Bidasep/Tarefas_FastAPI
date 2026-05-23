@@ -116,8 +116,8 @@ def get_tarefas(page:int =1, limit:int=10, ordenar_por:str = "nome", ordem:str =
     if ordem not in ["asc","desc"]:
         raise HTTPException(status_code=400,detail="Ordem deve ser 'asc' ou 'desc'")
     
-    if ordenar_por not in ["nome","descricao","status"]:
-        raise HTTPException(status_code=400,detail="Ordenação  deve ser por'nome' ou 'descricao' ou 'status' ! ")
+    if ordenar_por not in ["nome","descricao"]:
+        raise HTTPException(status_code=400,detail="Ordenação  deve ser por'nome' ou 'descricao' ! ")
     
     #estruturação do inicio e fim da pagina
     #inicio será na pagina -(menos) 1
@@ -158,7 +158,7 @@ def post_tarefa(tarefa:Tarefa, credentials: HTTPBasicCredentials = Depends(auten
             raise HTTPException(status_code = 400, detail = "Essa tarefa já existe !")
     #se nao, adiciona o objeto Tarefa na lista minhas tarefas e retorna a mensagem.    
     minhas_tarefas.append(tarefa)
-    return { "Mensagem" : "Tarefa adicionada com sucesso!",
+    return { "message" : "Tarefa adicionada com sucesso!",
             "tarefa":tarefa
     }
     
